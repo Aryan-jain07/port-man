@@ -109,7 +109,7 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error("AI Insight fetch anomaly occurred:", error);
-    } finaly {
+    } finally {
       setAiPulse(false);
     }
   };
