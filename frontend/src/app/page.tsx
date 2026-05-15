@@ -21,7 +21,7 @@ import {
   DollarSign,
 } from "lucide-react";
 
-// Initial seed arrays
+// Initial structural database models configuration seed
 const INITIAL_HOLDINGS = [
   { ticker: "NVDA", name: "NVIDIA Corporation", shares: 42, avgBuy: 487.32, currentPrice: 894.50, allocation: 28.4, sector: "Technology", change: 8.12 },
   { ticker: "AAPL", name: "Apple Inc.", shares: 85, avgBuy: 172.14, currentPrice: 211.84, allocation: 23.1, sector: "Technology", change: 1.34 },
@@ -69,7 +69,7 @@ export default function Dashboard() {
   const [time, setTime] = useState("");
   const [riskProfile, setRiskProfile] = useState("Moderate");
 
-  // Move arrays to active states so re-rendering modifies the interface layout
+  // State abstractions map direct database fields into screen re-render triggers
   const [holdings, setHoldings] = useState(INITIAL_HOLDINGS);
   const [insights, setInsights] = useState(initialInsights);
   const [aiVibeSummary, setAiVibeSummary] = useState(
@@ -84,11 +84,37 @@ export default function Dashboard() {
     return () => clearInterval(id);
   }, []);
 
-  const handleAI = () => {
+  // Handles conversational agent analysis generation hooks
+  const handleAI = async () => {
     setAiPulse(true);
-    setTimeout(() => setAiPulse(false), 1500);
+    try {
+      const response = await fetch("http://localhost:8000/api/insights", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          holdings: holdings.map(h => ({ ticker: h.ticker, allocation: h.allocation })),
+          market_vibe: "Highly Bullish"
+        })
+      });
+
+      if (!response.ok) throw new Error("AI Endpoint disconnected.");
+      const data = await response.json();
+
+      if (data.status === "success") {
+        setAiVibeSummary(data.summary);
+        setInsights(data.bullets.map((text: string, idx: number) => ({
+          icon: idx === 0 ? "alert" : "check",
+          text: text
+        })));
+      }
+    } catch (error) {
+      console.error("AI pipeline fallback loop triggered:", error);
+    } finally {
+      setAiPulse(false);
+    }
   };
 
+  // Handles algorithmic Modern Portfolio Theory optimization calls
   const handleRebalance = async () => {
     setRebalancing(true);
     try {
@@ -101,30 +127,26 @@ export default function Dashboard() {
         })
       });
 
-      if (!response.ok) throw new Error("API network layer rejection.");
+      if (!response.ok) throw new Error("Optimization framework error.");
       const data = await response.json();
 
       if (data.status === "success" && data.recommended_weights) {
-        // Enforce safe uppercase mapping parameters
-        const revisedHoldings = holdings.map(h => {
-          const matchingKey = h.ticker.toUpperCase();
-          const rawWeight = data.recommended_weights[matchingKey] ?? (h.allocation / 100);
+        // Safe uppercase key transformations guard against state property casing mismatch
+        const updatedAllocations = holdings.map(h => {
+          const dictKey = h.ticker.toUpperCase();
+          const rawWeight = data.recommended_weights[dictKey] ?? (h.allocation / 100);
           return {
             ...h,
             allocation: parseFloat((rawWeight * 100).toFixed(1))
           };
         });
         
-        setHoldings(revisedHoldings);
-        setAiVibeSummary(`Portfolio rebalanced successfully via standard algorithmic matrix models utilizing your requested ${riskProfile} risk framework constraints.`);
-        setInsights([
-          { icon: "check", text: "Mathematical optimization successfully converged. Volatility metrics re-weighted based on historical asset covariance." },
-          ...initialInsights.slice(1)
-        ]);
+        setHoldings(updatedAllocations);
+        setAiVibeSummary(`Portfolio rebalanced via historical covariance variance matrix analysis. Asset allocation configured for a ${riskProfile} risk parameter.`);
       }
     } catch (error) {
-      console.error("Rebalancing connectivity pipeline issue:", error);
-    } finally {
+      console.error("Rebalancing endpoint exception:", error);
+    } finaly {
       setRebalancing(false);
     }
   };
@@ -133,7 +155,7 @@ export default function Dashboard() {
   const totalCost = holdings.reduce((s, h) => s + h.shares * h.avgBuy, 0);
   const totalGainPct = ((totalValue - totalCost) / totalCost) * 100;
 
-  // Deriving breakdown parameters safely from active allocations
+  // Deriving real-time category breakdowns directly from state arrays
   const techPct = parseFloat(holdings.filter(h => h.sector === "Technology").reduce((sum, h) => sum + h.allocation, 0).toFixed(1));
   const consumerPct = parseFloat(holdings.filter(h => h.sector === "Consumer Disc.").reduce((sum, h) => sum + h.allocation, 0).toFixed(1));
   const financialPct = parseFloat(holdings.filter(h => h.sector === "Financials").reduce((sum, h) => sum + h.allocation, 0).toFixed(1));
@@ -148,7 +170,8 @@ export default function Dashboard() {
       </div>
 
       <div className="relative z-10 max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* HEADER */}
+        
+        {/* HEADER AREA */}
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 shadow-lg">
@@ -167,9 +190,9 @@ export default function Dashboard() {
               onChange={(e) => setRiskProfile(e.target.value)}
               className="bg-slate-900 border border-slate-800 text-slate-300 text-xs font-semibold px-3 py-2 rounded-xl focus:outline-none focus:ring-1 focus:ring-purple-500/50 cursor-pointer"
             >
-              <option value="Conservative">Conservative (Min Volatility)</option>
-              <option value="Moderate">Moderate (Max Sharpe)</option>
-              <option value="Aggressive">Aggressive (High Return)</option>
+              <option value="Conservative">Conservative Target</option>
+              <option value="Moderate">Moderate Growth</option>
+              <option value="Aggressive">Aggressive Alpha</option>
             </select>
 
             <button onClick={handleAI} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${aiPulse ? "bg-violet-500 text-white scale-95" : "bg-violet-600/20 text-violet-300 hover:bg-violet-600/30 border border-violet-500/30"}`}>
@@ -177,14 +200,14 @@ export default function Dashboard() {
             </button>
 
             <button onClick={handleRebalance} disabled={rebalancing} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${rebalancing ? "bg-emerald-500 text-white scale-95" : "bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/30 border border-emerald-500/30"}`}>
-              <RefreshCw className={`w-4 h-4 ${rebalancing ? "animate-spin" : ""}`} /> {rebalancing ? "Calculating..." : "Rebalance Portfolio"}
+              <RefreshCw className={`w-4 h-4 ${rebalancing ? "animate-spin" : ""}`} /> {rebalancing ? "Optimizing..." : "Rebalance Portfolio"}
             </button>
           </div>
         </header>
 
-        {/* METRICS ROW */}
+        {/* FINANCIAL SUMMARY CARDS GRID */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-slate-900/50 backdrop-blur border border-slate-800/60 rounded-2xl p-5 space-y-3 shadow-xl">
+          <div className="bg-slate-900/40 backdrop-blur border border-slate-800/60 rounded-2xl p-5 space-y-3 shadow-xl">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-widest text-slate-500">Net Asset Value</span>
               <span className="flex items-center gap-1 text-xs font-bold text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full"><TrendingUp className="w-3 h-3" />+{totalGainPct.toFixed(2)}%</span>
@@ -196,7 +219,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-slate-900/50 backdrop-blur border border-slate-800/60 rounded-2xl p-5 space-y-3 shadow-xl">
+          <div className="bg-slate-900/40 backdrop-blur border border-slate-800/60 rounded-2xl p-5 space-y-3 shadow-xl">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-widest text-slate-500">Cash Balance</span>
               <Wallet className="w-4 h-4 text-sky-400" />
@@ -208,30 +231,31 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-slate-900/50 backdrop-blur border border-slate-800/60 rounded-2xl p-5 space-y-3 shadow-xl">
+          <div className="bg-slate-900/40 backdrop-blur border border-slate-800/60 rounded-2xl p-5 space-y-3 shadow-xl">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-widest text-slate-500">AI Market Vibe</span>
               <Activity className="w-4 h-4 text-violet-400" />
             </div>
             <div className="flex items-end gap-3"><p className="text-2xl font-bold text-white">Highly Bullish</p><span className="text-xs font-bold text-violet-300 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full">92 / 100</span></div>
-            <div className="relative h-2 bg-slate-800 rounded-full overflow-hidden mt-1">
+            <div className="relative h-2 bg-slate-800 rounded-full overflow-hidden mt-2">
               <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-500 via-violet-500 to-violet-400" style={{ width: "92%" }} />
             </div>
-            <p className="text-xs text-slate-500">Fed rates pivot indicators and solid earnings reports drive positive baseline equity flows.</p>
+            <p className="text-[11px] text-slate-500 mt-1">Fed microeconomic indicators and macro tech earnings expand systemic cash deployments.</p>
           </div>
         </div>
 
-        {/* CONTENT GRID */}
+        {/* SMART INSIGHTS AND DATA VIEWS GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Smart Insights */}
-          <div className="bg-slate-900/50 backdrop-blur border border-slate-800/60 rounded-2xl p-5 shadow-xl space-y-4">
+          
+          {/* Smart Insights Panel */}
+          <div className="bg-slate-900/40 backdrop-blur border border-slate-800/60 rounded-2xl p-5 shadow-xl space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm font-bold text-white flex items-center gap-2"><Zap className="w-3.5 h-3.5 text-violet-400" />Smart Insights</span>
-              <span className="text-[10px] text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full font-bold">AI AGENT</span>
+              <span className="text-[10px] text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full font-bold">AI CO-PILOT</span>
             </div>
             <p className="text-xs text-slate-400 border-l-2 border-violet-600/50 pl-3 leading-relaxed">{aiVibeSummary}</p>
             
-            <div className="space-y-3 pt-2">
+            <div className="space-y-3 pt-1">
               {insights.slice(0, showInsightFull ? 4 : 2).map((b, i) => (
                 <div key={i} className="flex gap-2.5 items-start">
                   {b.icon === "alert" ? <AlertTriangle className="w-3.5 h-3.5 text-amber-400 mt-0.5 flex-shrink-0" /> : <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 mt-0.5 flex-shrink-0" />}
@@ -241,12 +265,12 @@ export default function Dashboard() {
             </div>
 
             <button onClick={() => setShowInsightFull(!showInsightFull)} className="text-xs text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-1">
-              {showInsightFull ? "Show less info" : `View ${insights.length - 2} more insights`}
+              {showInsightFull ? "Show less insights" : `View ${insights.length - 2} more insights`}
             </button>
 
-            {/* Breakdown progress matrix */}
+            {/* Dynamic Sector Weight Bars */}
             <div className="border-t border-slate-800 pt-4 space-y-3">
-              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">Live Sector Allocations</span>
+              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">Live Sector Distributions</span>
               <div className="space-y-1">
                 <div className="flex justify-between text-xs"><span className="text-slate-400">Technology</span><span className="text-slate-300 font-semibold">{techPct}%</span></div>
                 <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 transition-all duration-500" style={{ width: `${techPct}%` }} /></div>
@@ -260,10 +284,15 @@ export default function Dashboard() {
                 <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500" style={{ width: `${financialPct}%` }} /></div>
               </div>
             </div>
+
+            <div className="bg-amber-500/5 border border-amber-500/10 rounded-xl p-3 flex gap-2 items-start">
+              <Shield className="w-3.5 h-3.5 text-amber-400 mt-0.5 flex-shrink-0" />
+              <p className="text-[11px] text-amber-300/80"><span className="font-semibold text-amber-300">Concentration Alert:</span> Tech concentrations track above base indices. Dynamic rebalancing weights adjust system variance risks.</p>
+            </div>
           </div>
 
-          {/* Holdings Layout */}
-          <div className="lg:col-span-2 bg-slate-900/50 backdrop-blur border border-slate-800/60 rounded-2xl p-5 shadow-xl space-y-4">
+          {/* Current Allocations Table */}
+          <div className="lg:col-span-2 bg-slate-900/40 backdrop-blur border border-slate-800/60 rounded-2xl p-5 shadow-xl space-y-4">
             <div className="flex justify-between items-center pb-2 border-b border-slate-800"><span className="text-sm font-bold text-white">Current Asset Allocations</span><span className="text-xs text-slate-500">Total Positions: {holdings.length}</span></div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
@@ -290,8 +319,8 @@ export default function Dashboard() {
               </table>
             </div>
           </div>
-        </div>
 
+        </div>
       </div>
     </div>
   );
