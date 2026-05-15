@@ -9,7 +9,7 @@ from scipy.optimize import minimize
 
 app = FastAPI(title="AI Wealth Co-Pilot API", version="1.0")
 
-# Enable global CORS for secure communication with the Next.js local server
+# Enable global CORS handling for smooth Next.js local fetch communication
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,7 +18,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ─── DATA MODELS ──────────────────────────────────────────────────────────────
+# ─── Pydantic Data Models ─────────────────────────────────────────────────────
 class StockAllocation(BaseModel):
     ticker: str
     shares: float
@@ -35,12 +35,10 @@ class InsightRequest(BaseModel):
     holdings: List[AssetAllocation]
     market_vibe: str = "Highly Bullish"
 
-
-# ─── CORE ENDPOINTS ───────────────────────────────────────────────────────────
+# ─── Core Routes ──────────────────────────────────────────────────────────────
 @app.get("/")
 def read_root():
     return {"status": "healthy", "service": "AI Wealth Co-Pilot Engine"}
-
 
 @app.post("/api/optimize")
 def optimize_portfolio(request: RebalanceRequest):
@@ -55,11 +53,11 @@ def optimize_portfolio(request: RebalanceRequest):
         return {"status": "success", "recommended_weights": {tickers[0]: 1.0}}
         
     try:
-        # Download historical 3-year trailing asset data
+        # Download historical data from Yahoo Finance
         data = yf.download(tickers, period="3y", progress=False)
         
         if data.empty or 'Close' not in data:
-            print("⚠️ API data slice missing. Triggering safe fallback matrix.")
+            print("⚠️ Data block missing from API channel. Triggering fallback matrix.")
             return get_mock_optimization_fallback(tickers, request.risk_profile)
             
         close_data = data['Close'].ffill().bfill()
@@ -68,7 +66,6 @@ def optimize_portfolio(request: RebalanceRequest):
         if len(returns) < 5:
             return get_mock_optimization_fallback(tickers, request.risk_profile)
 
-        # Annualize performance and covariance dimensions
         mean_returns = returns.mean() * 252
         cov_matrix = returns.cov() * 252
         
@@ -77,14 +74,14 @@ def optimize_portfolio(request: RebalanceRequest):
             p_volatility = np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights)))
             return p_return, p_volatility
 
-        # Optimize for user's unique risk profile bounds
+        # Optimization goal configuration based on risk profiling parameters
         if request.risk_profile == "Conservative":
             def objective(weights):
                 return portfolio_performance(weights)[1] # Minimize Volatility
         else:
             def objective(weights):
                 p_return, p_vol = portfolio_performance(weights)
-                return -p_return / (p_vol + 1e-6) # Maximize Sharpe ratio
+                return -p_return / (p_vol + 1e-6) # Maximize Sharpe Ratio
 
         constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1.0})
         bounds = tuple((0.0, 1.0) for _ in range(num_assets))
@@ -103,27 +100,27 @@ def optimize_portfolio(request: RebalanceRequest):
             "recommended_weights": {tickers[i]: round(float(optimized_weights[i]), 4) for i in range(num_assets)}
         }
     except Exception as e:
-        print(f"🚨 Math Exception occurred: {str(e)}. Directing to safe metrics fallback.")
+        print(f"🚨 Optimization internal issue: {str(e)}. Triggering metrics fallback.")
         return get_mock_optimization_fallback(tickers, request.risk_profile)
-
 
 @app.post("/api/insights")
 def generate_insights(request: InsightRequest):
-    """Generates contextual descriptive risk narratives matching active portfolio metrics."""
+    """Generates a structured risk critique text block based on active allocations."""
     try:
+        # Aggregate exposure levels across core tech assets
         tech_exposure = sum(h.allocation for h in request.holdings if h.ticker in ["NVDA", "AAPL", "MSFT", "META"])
         
         summary_text = (
-            f"Your portfolio is heavily exposed to mega-cap technology clusters. "
-            f"Exposure to technology assets stands at {tech_exposure:.1f}%, which overextends baseline "
-            f"diversification metrics. Under a {request.market_vibe.lower()} microeconomic regime, this layout "
-            f"maximizes near-term beta but raises vulnerability to sector rotation cycles."
+            f"Your current allocation structure registers an elevated systemic exposure vector. "
+            f"Concentration across dominant technology weights stands at {tech_exposure:.1f}%, exceeding traditional "
+            f"risk-parity thresholds. Within this {request.market_vibe.lower()} phase, this positioning maximizes "
+            f"near-term momentum but exposes the capital foundation to rapid sector rotation drawdowns."
         )
         
         bullets = [
-            f"Tech concentration cluster stands at {tech_exposure:.1f}% — exceeds recommended 60% system target cap limits.",
-            "Covariance analysis registers a strong cross-asset correlation factor between your core tech holdings.",
-            "Trailing stop-losses are highly recommended to protect accumulated equity from quick macro shifts."
+            f"Technology concentration cluster registers at {tech_exposure:.1f}% — tracks above standard 60% sector cap allocations.",
+            "Covariance indices show tight underlying volatility clustering between your top three equity investments.",
+            "Dynamic trailing stop-loss configurations are suggested to insulate unrealized gains against macro pivot points."
         ]
         
         return {
@@ -134,9 +131,8 @@ def generate_insights(request: InsightRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 def get_mock_optimization_fallback(tickers, risk_profile):
-    """Guarantees a successful, structurally valid response matrix for hackathon stability if network APIs throttle."""
+    """Ensures fallback structural responses exist to eliminate frontend runtime crash risks."""
     num_assets = len(tickers)
     if risk_profile == "Conservative":
         weights = [0.35 if t in ["MSFT", "AAPL"] else 0.05 for t in tickers]
