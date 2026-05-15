@@ -21,7 +21,7 @@ import {
   DollarSign,
 } from "lucide-react";
 
-// Initial structural database models configuration seed
+// Default initial state configurations
 const INITIAL_HOLDINGS = [
   { ticker: "NVDA", name: "NVIDIA Corporation", shares: 42, avgBuy: 487.32, currentPrice: 894.50, allocation: 28.4, sector: "Technology", change: 8.12 },
   { ticker: "AAPL", name: "Apple Inc.", shares: 85, avgBuy: 172.14, currentPrice: 211.84, allocation: 23.1, sector: "Technology", change: 1.34 },
@@ -69,7 +69,7 @@ export default function Dashboard() {
   const [time, setTime] = useState("");
   const [riskProfile, setRiskProfile] = useState("Moderate");
 
-  // State abstractions map direct database fields into screen re-render triggers
+  // Local state scopes link incoming API responses cleanly to view parameters
   const [holdings, setHoldings] = useState(INITIAL_HOLDINGS);
   const [insights, setInsights] = useState(initialInsights);
   const [aiVibeSummary, setAiVibeSummary] = useState(
@@ -84,7 +84,7 @@ export default function Dashboard() {
     return () => clearInterval(id);
   }, []);
 
-  // Handles conversational agent analysis generation hooks
+  // Action hook to process dynamic contextual risk analyses from the backend
   const handleAI = async () => {
     setAiPulse(true);
     try {
@@ -97,7 +97,7 @@ export default function Dashboard() {
         })
       });
 
-      if (!response.ok) throw new Error("AI Endpoint disconnected.");
+      if (!response.ok) throw new Error("AI Endpoint connection rejected.");
       const data = await response.json();
 
       if (data.status === "success") {
@@ -108,13 +108,13 @@ export default function Dashboard() {
         })));
       }
     } catch (error) {
-      console.error("AI pipeline fallback loop triggered:", error);
+      console.error("AI Insight fetch anomaly occurred:", error);
     } finally {
       setAiPulse(false);
     }
   };
 
-  // Handles algorithmic Modern Portfolio Theory optimization calls
+  // Action hook to compute and render annualized Modern Portfolio Theory weights
   const handleRebalance = async () => {
     setRebalancing(true);
     try {
@@ -127,26 +127,24 @@ export default function Dashboard() {
         })
       });
 
-      if (!response.ok) throw new Error("Optimization framework error.");
+      if (!response.ok) throw new Error("Optimization API channel error.");
       const data = await response.json();
 
       if (data.status === "success" && data.recommended_weights) {
-        // Safe uppercase key transformations guard against state property casing mismatch
-        const updatedAllocations = holdings.map(h => {
-          const dictKey = h.ticker.toUpperCase();
-          const rawWeight = data.recommended_weights[dictKey] ?? (h.allocation / 100);
+        const reweighted = holdings.map(h => {
+          const formattingKey = h.ticker.toUpperCase();
+          const rawWeight = data.recommended_weights[formattingKey] ?? (h.allocation / 100);
           return {
             ...h,
             allocation: parseFloat((rawWeight * 100).toFixed(1))
           };
         });
         
-        setHoldings(updatedAllocations);
-        setAiVibeSummary(`Portfolio rebalanced via historical covariance variance matrix analysis. Asset allocation configured for a ${riskProfile} risk parameter.`);
+        setHoldings(reweighted);
       }
     } catch (error) {
-      console.error("Rebalancing endpoint exception:", error);
-    } finaly {
+      console.error("Rebalance matrix loop exception:", error);
+    } finally {
       setRebalancing(false);
     }
   };
@@ -155,7 +153,7 @@ export default function Dashboard() {
   const totalCost = holdings.reduce((s, h) => s + h.shares * h.avgBuy, 0);
   const totalGainPct = ((totalValue - totalCost) / totalCost) * 100;
 
-  // Deriving real-time category breakdowns directly from state arrays
+  // Deriving real-time category summaries safely from active state fields
   const techPct = parseFloat(holdings.filter(h => h.sector === "Technology").reduce((sum, h) => sum + h.allocation, 0).toFixed(1));
   const consumerPct = parseFloat(holdings.filter(h => h.sector === "Consumer Disc.").reduce((sum, h) => sum + h.allocation, 0).toFixed(1));
   const financialPct = parseFloat(holdings.filter(h => h.sector === "Financials").reduce((sum, h) => sum + h.allocation, 0).toFixed(1));
@@ -171,7 +169,7 @@ export default function Dashboard() {
 
       <div className="relative z-10 max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         
-        {/* HEADER AREA */}
+        {/* HEADER */}
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 shadow-lg">
@@ -190,22 +188,22 @@ export default function Dashboard() {
               onChange={(e) => setRiskProfile(e.target.value)}
               className="bg-slate-900 border border-slate-800 text-slate-300 text-xs font-semibold px-3 py-2 rounded-xl focus:outline-none focus:ring-1 focus:ring-purple-500/50 cursor-pointer"
             >
-              <option value="Conservative">Conservative Target</option>
-              <option value="Moderate">Moderate Growth</option>
+              <option value="Conservative">Conservative Parameters</option>
+              <option value="Moderate">Moderate Strategy</option>
               <option value="Aggressive">Aggressive Alpha</option>
             </select>
 
-            <button onClick={handleAI} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${aiPulse ? "bg-violet-500 text-white scale-95" : "bg-violet-600/20 text-violet-300 hover:bg-violet-600/30 border border-violet-500/30"}`}>
+            <button onClick={handleAI} disabled={aiPulse} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${aiPulse ? "bg-violet-500 text-white scale-95" : "bg-violet-600/20 text-violet-300 hover:bg-violet-600/30 border border-violet-500/30"}`}>
               <Brain className={`w-4 h-4 ${aiPulse ? "animate-spin" : ""}`} /> Ask AI Co-Pilot
             </button>
 
             <button onClick={handleRebalance} disabled={rebalancing} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${rebalancing ? "bg-emerald-500 text-white scale-95" : "bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/30 border border-emerald-500/30"}`}>
-              <RefreshCw className={`w-4 h-4 ${rebalancing ? "animate-spin" : ""}`} /> {rebalancing ? "Optimizing..." : "Rebalance Portfolio"}
+              <RefreshCw className={`w-4 h-4 ${rebalancing ? "animate-spin" : ""}`} /> {rebalancing ? "Processing..." : "Rebalance Portfolio"}
             </button>
           </div>
         </header>
 
-        {/* FINANCIAL SUMMARY CARDS GRID */}
+        {/* METRICS ROW */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-slate-900/40 backdrop-blur border border-slate-800/60 rounded-2xl p-5 space-y-3 shadow-xl">
             <div className="flex items-center justify-between">
@@ -237,14 +235,14 @@ export default function Dashboard() {
               <Activity className="w-4 h-4 text-violet-400" />
             </div>
             <div className="flex items-end gap-3"><p className="text-2xl font-bold text-white">Highly Bullish</p><span className="text-xs font-bold text-violet-300 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full">92 / 100</span></div>
-            <div className="relative h-2 bg-slate-800 rounded-full overflow-hidden mt-2">
+            <div className="relative h-2 bg-slate-800 rounded-full overflow-hidden mt-1">
               <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-500 via-violet-500 to-violet-400" style={{ width: "92%" }} />
             </div>
-            <p className="text-[11px] text-slate-500 mt-1">Fed microeconomic indicators and macro tech earnings expand systemic cash deployments.</p>
+            <p className="text-xs text-slate-500 mt-1">Macro interest parameters and strong corporate earnings expand systemic equity velocity.</p>
           </div>
         </div>
 
-        {/* SMART INSIGHTS AND DATA VIEWS GRID */}
+        {/* MAIN DYNAMIC CONTENT GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           
           {/* Smart Insights Panel */}
@@ -265,12 +263,12 @@ export default function Dashboard() {
             </div>
 
             <button onClick={() => setShowInsightFull(!showInsightFull)} className="text-xs text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-1">
-              {showInsightFull ? "Show less insights" : `View ${insights.length - 2} more insights`}
+              {showInsightFull ? "Show less summary" : `View ${insights.length - 2} more insights`}
             </button>
 
-            {/* Dynamic Sector Weight Bars */}
+            {/* Dynamic Category Weight Bars */}
             <div className="border-t border-slate-800 pt-4 space-y-3">
-              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">Live Sector Distributions</span>
+              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">Live Sector Breakdown Matrix</span>
               <div className="space-y-1">
                 <div className="flex justify-between text-xs"><span className="text-slate-400">Technology</span><span className="text-slate-300 font-semibold">{techPct}%</span></div>
                 <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 transition-all duration-500" style={{ width: `${techPct}%` }} /></div>
@@ -287,7 +285,7 @@ export default function Dashboard() {
 
             <div className="bg-amber-500/5 border border-amber-500/10 rounded-xl p-3 flex gap-2 items-start">
               <Shield className="w-3.5 h-3.5 text-amber-400 mt-0.5 flex-shrink-0" />
-              <p className="text-[11px] text-amber-300/80"><span className="font-semibold text-amber-300">Concentration Alert:</span> Tech concentrations track above base indices. Dynamic rebalancing weights adjust system variance risks.</p>
+              <p className="text-[11px] text-amber-300/80"><span className="font-semibold text-amber-300">Concentration Risk:</span> Core holdings track above indexing thresholds. Optimization weights help re-balance systemic risks.</p>
             </div>
           </div>
 
